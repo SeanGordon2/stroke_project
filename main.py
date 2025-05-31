@@ -1,5 +1,6 @@
 import pandas as pd
 from sklearn.preprocessing import OneHotEncoder
+from sklearn.model_selection import train_test_split
 import os
 import zipfile
 import kaggle  # Importing dataset from kaggle.
@@ -36,23 +37,37 @@ def analysis_missing_data(df):
     return cols_with_missing, stroke_cols_with_missing, non_stroke_cols_with_missing
 
 
-def fill_missing_data(df):
+def func_train_test_split(df):
     """
-    Function to impute missing data, in this case only .
+    Function to split into training, validation, and test data.
     :param df: DataFrame
-    :return:
+    :return: DataFrames containing training set, validation set, test set.
     """
-    df_copy = df.copy()  # Ensure original data is unchanged.
-    stroke_patients_df = df_copy[df_copy['stroke'] == 1].copy()  # Stroke patients only.
-    non_stroke_patients_df = df_copy[df_copy['stroke'] == 0].copy()  # Non-stroke patients.
+    train_set, temp_set = train_test_split(df, test_size=.4, random_state=42)
+    val_set, test_set = train_test_split(temp_set, test_size=.5, random_state=42)
+    return train_set, val_set, test_set
+
+
+def fill_missing_set_data(train_set, val_set, test_set):
+    """
+    Function to impute missing data for all sets with mean value from training set to prevent data leakage into
+    validation or test sets.
+    :param test_set:
+    :param val_set:
+    :param train_set:
+    :return: DataFrames for filled sets.
+    """
+    train_copy = train_set.copy()
+    val_copy = val_set.copy()
+    test_copy = test_set.copy()
 
     # Fill missing data with mean value of valid rows.
-    stroke_patients_df.bmi = stroke_patients_df.bmi.fillna(stroke_patients_df.bmi.mean())
-    non_stroke_patients_df.bmi = non_stroke_patients_df.bmi.fillna(non_stroke_patients_df.bmi.mean())
-    # Combine the filled datasets.
-    recombined_df = pd.concat([stroke_patients_df, non_stroke_patients_df], axis=0)
+    for col in train_set.columns:
+        train_copy[col] = train_copy[col].fillna(train_set[col].mean())  # Fill training set
+        val_copy[col] = val_copy[col].fillna(train_set[col].mean())  # Fill validation set
+        test_copy[col] = test_copy[col].fillna(train_set[col].mean())  # Fill test set
 
-    return recombined_df
+    return train_copy, val_copy, test_copy
 
 
 def categorical_variable_encoding(df):
@@ -78,20 +93,28 @@ def categorical_variable_encoding(df):
     return one_hot_df
 
 
-def main_func(dataset_name):
+def load_data_clean_and_split(dataset_name):
     """
-    Function to run total dataset.
-    :param dataset_name: string name of dataset in directory.
-    :return:
+    Function to load dataset from directory; fill null values; convert data from categorical to numerical; and split
+    into training, validation, and test datasets.
+    :param dataset_name: string format name of CSV file.
+    :return: DataFrames containing training set, validation set, test set.
     """
     df = read_csv(dataset_name)
-    print([col for col in df.columns])
-    full_df = fill_missing_data(df)
-    cat_cols = categorical_variable_encoding(full_df)
-    return cat_cols
+    df = categorical_variable_encoding(df)
+    train_set, val_set, test_set = func_train_test_split(df)
+    train_set, val_set, test_set = fill_missing_set_data(train_set, val_set, test_set)
+
+    return train_set, val_set, test_set
+
+def main_func(dataset_name):
+
+    train_set, val_set, test_set = load_data_clean_and_split(dataset_name)
+
+    return 0
 
 
 if __name__ == '__main__':
     # print(read_csv("healthcare-dataset-stroke-data.csv").head())
     # print(list(read_csv("healthcare-dataset-stroke-data.csv")))
-    print(main_func("healthcare-dataset-stroke-data.csv").head())
+    print(main_func("healthcare-dataset-stroke-data.csv"))
