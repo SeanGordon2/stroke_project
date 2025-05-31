@@ -1,4 +1,5 @@
 import pandas as pd
+from sklearn.preprocessing import OneHotEncoder
 import os
 import zipfile
 import kaggle  # Importing dataset from kaggle.
@@ -48,11 +49,33 @@ def fill_missing_data(df):
     # Fill missing data with mean value of valid rows.
     stroke_patients_df.bmi = stroke_patients_df.bmi.fillna(stroke_patients_df.bmi.mean())
     non_stroke_patients_df.bmi = non_stroke_patients_df.bmi.fillna(non_stroke_patients_df.bmi.mean())
-
     # Combine the filled datasets.
     recombined_df = pd.concat([stroke_patients_df, non_stroke_patients_df], axis=0)
 
     return recombined_df
+
+
+def categorical_variable_encoding(df):
+    """
+    Function to encode categorical variables to numerical data.
+    :param df: DataFrame
+    :return: DataFrame with encoded variables
+    """
+    s = (df.dtypes == 'object')
+    object_cols = list(s[s].index)
+    # print("Categorical variables: ", object_cols)
+
+    # Apply one-hot encoder to each column with categorical data.
+    one_hot_encoder = OneHotEncoder(handle_unknown='ignore', sparse_output=False)
+    encoded = one_hot_encoder.fit_transform(df[object_cols])
+    one_hot_cols = pd.DataFrame(encoded, columns=one_hot_encoder.get_feature_names_out(object_cols))
+
+    one_hot_cols.index = df.index  # One-hot encoding removed index; put it back
+    numerical_df = df.drop(object_cols, axis=1)  # Remove categorical columns.
+    one_hot_df = pd.concat([numerical_df, one_hot_cols], axis=1)  # Add one-hot encoded columns to numerical features.
+    one_hot_df.columns = one_hot_df.columns.astype(str)  # Ensure all columns have string type
+
+    return one_hot_df
 
 
 def main_func(dataset_name):
@@ -62,14 +85,13 @@ def main_func(dataset_name):
     :return:
     """
     df = read_csv(dataset_name)
+    print([col for col in df.columns])
     full_df = fill_missing_data(df)
-    return full_df.head()
+    cat_cols = categorical_variable_encoding(full_df)
+    return cat_cols
 
 
-# Press the green button in the gutter to run the script.
 if __name__ == '__main__':
     # print(read_csv("healthcare-dataset-stroke-data.csv").head())
     # print(list(read_csv("healthcare-dataset-stroke-data.csv")))
-    print(main_func("healthcare-dataset-stroke-data.csv"))
-
-# See PyCharm help at https://www.jetbrains.com/help/pycharm/
+    print(main_func("healthcare-dataset-stroke-data.csv").head())
