@@ -47,9 +47,6 @@ def func_train_test_split(df):
     train_set, temp_set = train_test_split(df, test_size=.4, random_state=42, shuffle=True, stratify=df.stroke)
     val_set, test_set = train_test_split(temp_set, test_size=.5, random_state=42, shuffle=True,
                                          stratify=temp_set.stroke)
-    print("training set: ", train_set.stroke.value_counts(normalize=True))
-    print("val set: ", val_set.stroke.value_counts(normalize=True))
-    print("test set: ", test_set.stroke.value_counts(normalize=True))
 
     return train_set, val_set, test_set
 
