@@ -39,12 +39,18 @@ def analysis_missing_data(df):
 
 def func_train_test_split(df):
     """
-    Function to split into training, validation, and test data.
+    Function to split into training, validation, and test data. Stratifying split based on stroke column due to low
+    stroke prevalence in dataset.
     :param df: DataFrame
     :return: DataFrames containing training set, validation set, test set.
     """
-    train_set, temp_set = train_test_split(df, test_size=.4, random_state=42)
-    val_set, test_set = train_test_split(temp_set, test_size=.5, random_state=42)
+    train_set, temp_set = train_test_split(df, test_size=.4, random_state=42, shuffle=True, stratify=df.stroke)
+    val_set, test_set = train_test_split(temp_set, test_size=.5, random_state=42, shuffle=True,
+                                         stratify=temp_set.stroke)
+    print("training set: ", train_set.stroke.value_counts(normalize=True))
+    print("val set: ", val_set.stroke.value_counts(normalize=True))
+    print("test set: ", test_set.stroke.value_counts(normalize=True))
+
     return train_set, val_set, test_set
 
 
