@@ -53,7 +53,7 @@ def func_train_test_split(df):
 
 def fill_missing_set_data(train_set, val_set, test_set):
     """
-    Function to impute missing data for all sets with mean value from training set to prevent data leakage into
+    Impute missing data for all sets with mean value from training set to prevent data leakage into
     validation or test sets.
     :param test_set:
     :param val_set:
