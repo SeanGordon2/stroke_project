@@ -1,6 +1,12 @@
+import numpy as np
 import pandas as pd
 from sklearn.preprocessing import OneHotEncoder
 from sklearn.model_selection import train_test_split
+from sklearn import linear_model
+from sklearn.preprocessing import StandardScaler
+from sklearn.metrics import classification_report, confusion_matrix
+import seaborn as sns; sns.set()
+import matplotlib.pyplot as plt
 import os
 import zipfile
 import kaggle  # Importing dataset from kaggle.
@@ -110,9 +116,78 @@ def load_data_clean_and_split(dataset_name):
 
     return train_set, val_set, test_set
 
-def main_func(dataset_name):
 
+def logistic_regression_model(x, y):
+    """
+    Function to train logistic regression model.
+    :param x: DataFrame of training data inputs.
+    :param y: DataFrame of training data outputs.
+    :return: Logistic Regression model fitted for training data.
+    """
+    logr_model = linear_model.LogisticRegression(max_iter=1000)
+    logr_model.fit(x, y)
+
+    return logr_model
+
+
+def apply_ml_model(model, x, y):
+    """
+
+    :param model: Trained ML model.
+    :param x: DataFrame of test inputs.
+    :param y: DataFrame of test outputs.
+    :return:
+    """
+    # Get probability estimates for the test set
+    probabilities = model.predict_proba(x)
+    # Make predictions using predict()
+    predictions = model.predict(x)
+
+    # # Compare predictions with probability estimates
+    # for i, (pred, prob) in enumerate(zip(predictions, probabilities)):
+    #     print(
+    #         f"Sample {i + 1}: Predicted Class = {pred}, Class 0 Probability = {prob[0]:.4f}, "
+    #         f"Class 1 Probability = {prob[1]:.4f}")
+
+    print("Score of Model: ", model.score(x, y))
+    confusion_matrix_full = confusion_matrix(y, predictions)
+
+    cm_df = pd.DataFrame(confusion_matrix_full,
+                         index=['1', '0'],
+                         columns=['1', '0'])
+    ax = sns.heatmap(cm_df, fmt='d', cmap="YlGnBu", cbar=False, annot=True)
+
+    plt.ylabel('True label')
+    plt.xlabel('Predicted label')
+    plt.title('Confusion Matrix')
+    plt.show()
+
+
+
+
+def apply_test_logr(x_train, y_train, x_test, y_test):
+
+    # 1. Scale the features
+    scaler = StandardScaler()
+    x_train_scaled = scaler.fit_transform(x_train)
+    x_val_scaled = scaler.transform(x_test)
+
+    model = logistic_regression_model(x_train_scaled, y_train)
+    apply_ml_model(model, x_val_scaled, y_test)
+
+    return "Finished job."
+
+
+def main_func(dataset_name):
     train_set, val_set, test_set = load_data_clean_and_split(dataset_name)
+
+    x_train = train_set.loc[:, train_set.columns != "stroke"]
+    y_train = train_set["stroke"]
+
+    x_val = val_set.loc[:, val_set.columns != "stroke"]
+    y_val = val_set["stroke"]
+
+    apply_test_logr(x_train, y_train, x_val, y_val)
 
     return 0
 
